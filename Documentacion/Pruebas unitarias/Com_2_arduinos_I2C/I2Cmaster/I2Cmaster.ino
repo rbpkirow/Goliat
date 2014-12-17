@@ -3,6 +3,8 @@
 // Direccion del esclavo: 2
 
 #include <Wire.h>
+#include <TimerOne.h>
+
 
 char valor1;
 unsigned char valor2;
@@ -19,6 +21,9 @@ void setup()
   TCCR3B = TCCR3B & 0b000 | 0x02;  // PWM-5
   TCCR1B = TCCR1B & 0b000 | 0x02;  // PWM-9-10
   TCCR0B = TCCR0B & 0b000 | 0x03;  // PWM-3 --> AFECTA A DELAY. Valor por defecto = 0x03
+
+  Timer1.initialize(100000);
+  Timer1.attachInterrupt(PID);
   
   pinMode(5,OUTPUT);
   pinMode(6,OUTPUT);
@@ -32,12 +37,24 @@ void setup()
   analogWrite(6,20);
   analogWrite(9,30);
   analogWrite(10,40);
+  
+  Wire.beginTransmission(2);
+  Wire.write("HOLA, SOY GOLIATH!");
+  Wire.endTransmission();
+  
 }
 
 
 
 void loop()
 {
+  delay(500);
+}
+
+
+void PID()
+{
+  // Interrupcion cada 40 msg para el PID
   Wire.requestFrom(2,4);
   // Pido 8 bits de los 8 sensores digitales
   // y 3 sensores analogicos
@@ -57,7 +74,9 @@ void loop()
     Serial.print(valor3,DEC);
     Serial.print(" valor4 = ");
     Serial.println(valor4,DEC);
-  }
-  delay(500);
+  }  
+  
+  
 }
+
 

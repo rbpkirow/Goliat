@@ -3,6 +3,15 @@
 // Envia por I2C los valores de todos los sensores
 
 #include <Wire.h>
+#include "DigoleSerial.h"
+
+#define _Digole_Serial_UART_  //To tell compiler compile the special communication only, 
+
+#define LCDCol 20
+#define LCDRow 4
+DigoleSerialDisp mydisp(&Serial1, 9600);
+
+
 
 #define UMBRAL  512
 
@@ -12,8 +21,11 @@ unsigned int CNY_1, CNY_2, valor_aux;
 
 void setup()
 {
+  ResetDisplay();
+  mydisp.drawStr(1, 0, "Config de Goliath"); //display string at: x=4, y=0
   Wire.begin(2);
   Wire.onRequest(RequetEvent);
+  Wire.onReceive(ReceiveEvent);
   Enviar = 0;
   CNY_1 = 0;
   CNY_2 = 0;
@@ -59,4 +71,34 @@ void RequetEvent()
   Wire.write(bufer,4);
   Serial.println("Enviado");
 }
+
+
+
+void ReceiveEvent(int howMany)
+{
+  while(Wire.available())
+  {
+    char c = Wire.read();
+    Serial.print(c);
+  }
+  Serial.println();
+}
+
+
+
+void resetpos(void)
+{
+    mydisp.setPrintPos(0, 1);
+    delay(2000); //delay 2 seconds
+    mydisp.println("                "); //display space, use to clear the demo line
+    mydisp.setPrintPos(0, 1);
+}
+
+
+void ResetDisplay(void)
+{
+    mydisp.begin();
+    mydisp.disableCursor(); //disable cursor, enable cursore use: enableCursor();
+    mydisp.clearScreen(); //CLear screen
+}  
 
