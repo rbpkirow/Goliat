@@ -8,9 +8,10 @@
 //	9/10	  PWM	   D	PWM_1/2_MD  - Output
 
 //	7         Int4     D    Int. Mando a dist. - Input
+//      8         Aux      D/A  Sensor Auxiliar - Input
 //	14/15/16	   D	LED1/2/3      - Output
 //	A0/A1	  Anal.	   A	IS_1/2_MI   -   Input
-//	A2/A3	  A2/A3	   A	IS_1/2_MD   -   Input
+//	A2/A3	  Anal.	   A	IS_1/2_MD   -   Input
 #include <Wire.h>
 #include <TimerOne.h>
 
