@@ -9,27 +9,41 @@
 
 #define LCDCol 20
 #define LCDRow 4
-DigoleSerialDisp mydisp(&Serial1, 9600);
+//DigoleSerialDisp mydisp(&Serial1, 9600);
 
+
+#define SD_DelIzq   5
+#define SD_DelDer   6
+#define SD_Izq      7
+#define SD_Der      8
+#define SD_Aux      4
+#define SA_Aux     A6
+#define SA_Del     A9
+#define SD_Tras    10
+#define SA_TrasIzq A0
+#define SA_TrasDer A1
+#define SA_CNY_Izq A2
+#define SA_CNY_Der A3
 
 
 #define UMBRAL  512
 
 uint8_t bufer[4];
 char Enviar;
-unsigned int CNY_1, CNY_2, valor_aux;
+unsigned int CNY_I, CNY_D, valor_aux;
+int EnviarDatos;
 
 void setup()
 {
-  ResetDisplay();
-  mydisp.drawStr(1, 0, "Config de Goliath"); //display string at: x=4, y=0
+  Serial.begin(115200);
   Wire.begin(2);
-  Wire.onRequest(RequetEvent);
+  Wire.onRequest(RequestEvent);
   Wire.onReceive(ReceiveEvent);
   Enviar = 0;
-  CNY_1 = 0;
-  CNY_2 = 0;
+  CNY_I = 0;
+  CNY_D = 0;
   valor_aux = 0;
+  ResetDisplay();
 }
 
 
@@ -38,48 +52,67 @@ void setup()
 //  Sensor digital Izquierdo (7)
 //  Sensor digital derecho (8)
 //  Sensor digital trasero (10)
-//  CNY_1
-//  CNY_2
+//  CNY_I
+//  CNY_D
 //  Sensor auxiliar (4)
 
 void loop()
 {
-  
+
 }
 
-void RequetEvent()
+
+void RequestEvent()
 {
-  valor_aux = analogRead(2);  // CNY analogico delantero izquierda
-  CNY_1 = 0;
-  if(valor_aux > UMBRAL)
-    CNY_1 = 1;
-  valor_aux = analogRead(3);  // CNY analogico delantero derecha
-  CNY_2 = 0;
-  if(valor_aux > UMBRAL)
-    CNY_2 = 1;
+    valor_aux = analogRead(SA_CNY_Izq);  // CNY analogico delantero izquierda
+    CNY_I = 0;
+    if(valor_aux > UMBRAL)
+      CNY_I = 1;
+    valor_aux = analogRead(SA_CNY_Der);  // CNY analogico delantero derecha
+    CNY_D = 0;
+    if(valor_aux > UMBRAL)
+      CNY_D = 1;
     
-  bufer[0] = (digitalRead(5)<<7) + (digitalRead(6)<<6) + (digitalRead(7)<<5) + (digitalRead(8)<<4) + (digitalRead(10)<<3) + (CNY_1<<2) + (CNY_2<<1) + (digitalRead(4)<<0);
+    bufer[0] =  (digitalRead(SD_DelIzq)<<7) + 
+                (digitalRead(SD_DelDer)<<6) + 
+                (digitalRead(SD_Izq)<<5) + 
+                (digitalRead(SD_Der)<<4) + 
+                (digitalRead(SD_Tras)<<3) + 
+                (CNY_I<<2) + (CNY_D<<1) + 
+                (digitalRead(SD_Aux)<<0);
+   if(EnviarDatos == 1)
+   {
+       Wire.write(bufer,1);
+       Serial.println("Enviado 1 datos");
+   }  
   
-  bufer[1] = analogRead(0);  // Sensor analogico trasero izquierda
-  bufer[2] = analogRead(1);  // Sensor analogico trasero derecha
-  bufer[3] = analogRead(9);  // Sensor analogico delantero largo
+    else
+    {
   
-  bufer[0] = 11;
-  bufer[1] = 22;
-  bufer[2] = 33;
-  bufer[3] = 44;
-  Wire.write(bufer,4);
-  Serial.println("Enviado");
+      bufer[1] = analogRead(SA_TrasIzq);  // Sensor analogico trasero izquierda
+      bufer[2] = analogRead(SA_TrasDer);  // Sensor analogico trasero derecha
+      bufer[3] = analogRead(SA_Del);  // Sensor analogico delantero largo
+    
+      bufer[0] = 0 + (CNY_I<<2) + (CNY_D<<1);
+      Wire.write(bufer,4);
+      Serial.println("Enviado 4 datos");
+    }
+//  mydisp.drawStr(1, 0, "Config de Goliath"); //display string at: x=4, y=0
 }
 
 
 
 void ReceiveEvent(int howMany)
 {
+  char c;
   while(Wire.available())
   {
-    char c = Wire.read();
-    Serial.print(c);
+    c = Wire.read();
+    Serial.print(c,DEC);
+    if(howMany == 1)
+    {
+      EnviarDatos = c;
+    }
   }
   Serial.println();
 }
@@ -88,17 +121,17 @@ void ReceiveEvent(int howMany)
 
 void resetpos(void)
 {
-    mydisp.setPrintPos(0, 1);
+//    mydisp.setPrintPos(0, 1);
     delay(2000); //delay 2 seconds
-    mydisp.println("                "); //display space, use to clear the demo line
-    mydisp.setPrintPos(0, 1);
+//    mydisp.println("                "); //display space, use to clear the demo line
+//    mydisp.setPrintPos(0, 1);
 }
 
 
 void ResetDisplay(void)
 {
-    mydisp.begin();
-    mydisp.disableCursor(); //disable cursor, enable cursore use: enableCursor();
-    mydisp.clearScreen(); //CLear screen
+   // mydisp.begin();
+//    mydisp.disableCursor(); //disable cursor, enable cursore use: enableCursor();
+//    mydisp.clearScreen(); //CLear screen
 }  
 
