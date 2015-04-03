@@ -6,15 +6,19 @@
 #include "DigoleSerial.h"
 
 
+char MyCont;
+
 void setup()
 {
   Wire.begin(2);
   Wire.onRequest(RequestEvent);
   Wire.onReceive(ReceiveEvent);
+  
   Enviar = 0;
   CNY_I = 0;
   CNY_D = 0;
   valor_aux = 0;
+  MyCont = 0;
   ResetDisplay();
 }
 
@@ -29,32 +33,27 @@ void setup()
 //  Sensor auxiliar (4)
 
 void loop()
-{
-    valor_aux = analogRead(SA_CNY_Izq);  // CNY analogico delantero izquierda
-    if(valor_aux > UMBRAL)
-      CNY_I = 1;
-    else
-      CNY_I = 0;
-      
-    valor_aux = analogRead(SA_CNY_Der);  // CNY analogico delantero derecha
-    if(valor_aux > UMBRAL)
-      CNY_D = 1;  
-    else
-      CNY_D = 0;
-
-    delay(2);
+{    
+    delayMicroseconds(500);
 }
 
 
 void RequestEvent()
 {
-    bufer[0] =  (digitalRead(SD_DelIzq)<<7) + 
-                (digitalRead(SD_DelDer)<<6) + 
-                (digitalRead(SD_Izq)<<5) + 
-                (digitalRead(SD_Der)<<4) + 
-                (digitalRead(SD_Tras)<<3) + 
-                (CNY_I<<2) + (CNY_D<<1) + 
-                (digitalRead(SD_Aux)<<0);             
+  
+    if(analogRead(SA_CNY_Izq) > UMBRAL)  CNY_I = 1;
+    else                                 CNY_I = 0;
+      
+    if(analogRead(SA_CNY_Der) > UMBRAL)  CNY_D = 1;  
+    else                                 CNY_D = 0;
+    bufer[0] =  (0<<7) + //(digitalRead(SD_DelIzq)<<7) + 
+                (0<<6) + //(digitalRead(SD_DelDer)<<6) + 
+                (0<<5) +   //(digitalRead(SD_Izq)<<5) + 
+                (0<<4) + //(digitalRead(SD_Der)<<4) + 
+                (0<<3) + //(digitalRead(SD_Tras)<<3) + 
+                (CNY_I<<2) + 
+                (CNY_D<<1) + 
+                (0<<0);  //(digitalRead(SD_Aux)<<0);
    if(EnviarDatos == 1)
    {
        Wire.write(bufer,1);
@@ -69,11 +68,23 @@ void RequestEvent()
       bufer[0] = 0 + (CNY_I<<2) + (CNY_D<<1);
       Wire.write(bufer,4);
     }
+    MyCont++;
+    if(MyCont >= 20)
+    {
+      MyCont = 0;
+      char _Mensaje[25];
+      ResetDisplay();
+      itoa(analogRead(SA_CNY_Izq), _Mensaje, 10);
+      LCD.drawStr(0, 0, _Mensaje);    
+      itoa(analogRead(SA_CNY_Der), _Mensaje, 10);
+      LCD.drawStr(0, 1, _Mensaje);    
+    }
 }
 
 
 
-// Formato: Fila - Columna - Mensaje
+// Formato Lectura sensores: 1 solo byte. valor = 1 para leer solo los digitales. valor = 4 para leer todos los sensores
+// Formato LCD: Fila - Columna - Mensaje
 void ReceiveEvent(int howMany)
 {
   char _Mensaje[25];

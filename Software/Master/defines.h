@@ -16,6 +16,7 @@
 #define P3_PULSADO 3
 
 #define NEGRO 0
+#define BLANCO 1
 
 #define REF_P1 584
 #define REF_P2 767
@@ -26,12 +27,25 @@
 
 #define address   2
 
+#define LEIDO_CNY_NONE  0
+#define LEIDO_CNY_BOTH  1
+#define LEIDO_CNY_D     2
+#define LEIDO_CNY_I     3
+
+#define NO_DETECTADO        0
+#define DETECTADO_ADELANTE  1
+#define DETECTADO_DERECHA   2
+#define DETECTADO_IZQUIERDA 3
+#define DETECTADO_ATRAS     4
+
+#define NUM_LECTURAS_CNY 4
 
 int valor;
 int i;
 int mi;
 int md;
 
+unsigned int TIME;
 
 unsigned char varios;
 unsigned char SA_TrasIzq;
@@ -42,6 +56,13 @@ int _botonAn,_botonAn_tmp1,_botonAn_tmp2;
 int Boton;
 unsigned char _contadorPID;
 char Pulsador;
+char m_comprobarCNY;
+char PosicionOponente;
 
-//char Pulsador;
+
+unsigned char sAux,cnyDer,cnyIzq,sTras,sDer,sIzq,sDelDer,sDelIzq;  // todos son digitales
+
+char contadorCNY_I;
+char contadorCNY_D;
+char contadorCNY_Ambos;
 

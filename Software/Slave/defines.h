@@ -23,7 +23,7 @@ DigoleSerialDisp LCD(&Serial1, 9600);
 #define SA_CNY_Der A3
 
 
-#define UMBRAL  512
+#define UMBRAL  700
 
 uint8_t bufer[4];
 char Enviar;
