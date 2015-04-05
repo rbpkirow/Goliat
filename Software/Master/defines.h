@@ -40,6 +40,26 @@
 
 #define NUM_LECTURAS_CNY 4
 
+// Direcciones de movimiento
+#define NOSE				    0 //   |  MI   |  MD   |
+                                  //   |       |       |
+#define IZQ_ATRAS_DER_ATRAS		1 //   |   -1  |   -1  |
+#define IZQ_ATRAS_DER_STOP		2 //   |   -1  |    0  |
+#define IZQ_ATRAS_DER_ADEL		3 //   |   -1  |    1  |
+#define IZQ_STOP_DER_ATRAS		4 //   |    0  |   -1  |
+#define IZQ_STOP_DER_STOP		5 //   |    0  |    0  |
+#define IZQ_STOP_DER_ADEL		6 //   |    0  |    1  |
+#define IZQ_ADEL_DER_ATRAS		7 //   |    1  |   -1  |
+#define IZQ_ADEL_DER_STOP		8 //   |    1  |    0  |
+#define IZQ_ADEL_DER_ADEL      	        9 //   |    1  |    1  |
+#define PARADO                         10 // Igual que stop-stop
+
+#define NO		0
+#define	SI		1
+
+#define DETECTADO 	0
+
+
 int valor;
 int i;
 int mi;
@@ -65,4 +85,18 @@ unsigned char sAux,cnyDer,cnyIzq,sTras,sDer,sIzq,sDelDer,sDelIzq;  // todos son 
 char contadorCNY_I;
 char contadorCNY_D;
 char contadorCNY_Ambos;
+
+int motizq_tmp;
+int motder_tmp;
+char contador_V_BASE;
+int V_BASE;
+int BIAS;
+
+char Direccion;
+char DireccionAnterior;
+char DetectadoOponente;
+
+unsigned char MAX_CONT;
+unsigned char contador_Giros;
+char Prueba;
 

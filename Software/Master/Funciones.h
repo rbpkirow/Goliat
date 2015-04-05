@@ -1,5 +1,12 @@
 #include <Wire.h>
+#include <TimerOne.h>
 #include "arduino.h"
+
+void bluePrintln(char *cadena);
+void bluePrint(char *cadena);
+
+#define STOP_PID    Timer1.stop();
+#define RESTART_PID Timer1.resume();
 
 void ponMotores(int _MotIzq, int _MotDer)
 {
@@ -53,6 +60,11 @@ void InitHw()
 	pinMode(PWM_D_2,OUTPUT);
 	pinMode(BOTON_PIN,INPUT);
         _contadorPID = 0;
+        PosicionOponente = NO_DETECTADO;
+        contador_V_BASE = 0;
+        BIAS = 80;
+        V_BASE = BIAS;
+        TIME = 200;
 }
 
 
@@ -94,6 +106,49 @@ void SeleccionarEstrategia()
 }
 
 
+
+void LeerSensores(char _numero)
+{
+  int contadorWire = 0;
+  
+  // Peticion de datos
+  Wire.beginTransmission(2);
+  Wire.write(_numero);
+  Wire.endTransmission();
+  delayMicroseconds(50);
+  
+  // Lectura de datos
+  Wire.requestFrom(2,_numero);
+  while(Wire.available() != _numero && contadorWire<2)
+  {
+    Serial1.println("Esperando datos...");
+    if(Wire.available() == 0)
+    {
+      Serial1.println("Datos no disponibles.. Vuelvo a pedirlos");
+      Wire.requestFrom(2,_numero);
+    }
+    contadorWire++;
+  }
+
+  // Leemos el primer dato  
+  varios = Wire.read();
+  sAux    = (varios & 0b00000001) >> 0;
+  cnyDer  = (varios & 0b00000010) >> 1;
+  cnyIzq  = (varios & 0b00000100) >> 2;
+  sTras   = (varios & 0b00001000) >> 3;
+  sDer    = (varios & 0b00010000) >> 4;
+  sIzq    = (varios & 0b00100000) >> 5;
+  sDelDer = (varios & 0b01000000) >> 6;
+  sDelIzq = (varios & 0b10000000) >> 7;
+
+  // Si son 4, leemos los otros 3 sensores
+  if(_numero == 4)
+  {
+    
+  }
+}
+
+
 char ComprobarCNY(void)
 {
     char LecturaCNY_D = cnyDer;
@@ -131,111 +186,128 @@ void UseCnyData()
             Serial1.println("Leidos 2 CNY");
             contadorCNY_D = 0;
             contadorCNY_I = 0;
+            V_BASE = BIAS;
+            contador_V_BASE = 0;            
             contadorCNY_Ambos++;
             if(contadorCNY_Ambos >= NUM_LECTURAS_CNY)
             {
+              STOP_PID;
               contadorCNY_Ambos = 0;
-              Serial1.println("Confirmado 2 CNY");
+              bluePrintln("Confirmado 2 CNY");
             
               ponMotores(-10, -10);    delay(10);
               ponMotores(-50, -50);    delay(400);
               ponMotores(50, 50);      delay(100);
               
-              if(PosicionOponente != DETECTADO_ADELANTE)
+              if(PosicionOponente == NO_DETECTADO)
               {
                   ponMotores(50, -50);  delay(700);
                   ponMotores(50, 50);	delay(100);
               }
+              RESTART_PID;
             }   // if(contadorCNY_Ambos >= NUM_LECTURAS_CNY)
             break;
 
             case LEIDO_CNY_D:
               contadorCNY_Ambos = 0;
               contadorCNY_I = 0;
+              V_BASE = BIAS;
+              contador_V_BASE = 0;
               contadorCNY_D++;
 
               if(contadorCNY_D >= NUM_LECTURAS_CNY)
               {
+                  STOP_PID;
                   contadorCNY_D = 0;
 
                   switch(PosicionOponente)
                   {
                       case NO_DETECTADO:
-                          ponMotores(-10, -10);    delay(10);
-                          ponMotores(-10, -50);   delay(400);
-                          ponMotores(50, 50);    delay(10);
+                          ponMotores(-10, -10);   delay(10);
+                          ponMotores(-10, -150);  delay(600);
+                          ponMotores(50, 50);     delay(5);
                           break;
                       case DETECTADO_ADELANTE:	// Si detecto adelante, no hago caso a los cny, simplemente empujo.
-                          ponMotores(0, -50);	    delay(200);
-                          ponMotores(50, 50);	    delay(10);
+                          ponMotores(-10, -10);   delay(10);
+                          ponMotores(0, -100);    delay(300);
                           break;
                       case DETECTADO_DERECHA:		// Si detecto a la derecha y se activa el cny derecho, es casi imposible. No lo contemplo
                           break;
                       case DETECTADO_IZQUIERDA:	// Si detecto a la izquierda y se activa el cny derecho, es que me esta empujando. Intento salir dando marcha atras.
-                          ponMotores(-10, -10);	    delay(10);
-                          ponMotores(-50, -50);	    delay(400);
-                          ponMotores(50, 50);	    delay(10);
+                          ponMotores(-10, -10);	    delay(400);
+                          ponMotores(-130, -200);   delay(300);
+                          ponMotores(100, 100);	    delay(400);
                           break;
                       case DETECTADO_ATRAS:
-                          ponMotores(-10, -10);  delay(10);
-                          ponMotores(-50, -50);  delay(10);
-                          ponMotores(50, 50);    delay(10);
+                          ponMotores(-10, -10);	    delay(400);
+                          ponMotores(-200, -200);   delay(300);
+                          ponMotores(100, 100);	    delay(400);
                           break;
                       default:
                           break;
                   } // switch(PosicionOponente)
+                  RESTART_PID;
               } // if(contadorCNY_D >= NUM_LECTURAS_CNY)
               break;
           case LEIDO_CNY_I:
               contadorCNY_Ambos = 0;
               contadorCNY_D = 0;
+              V_BASE = BIAS;
+              contador_V_BASE = 0;
               contadorCNY_I++;
               if(contadorCNY_I >= NUM_LECTURAS_CNY)
               {
+                  STOP_PID;
                   contadorCNY_I = 0;
 
                   switch(PosicionOponente)
                   {
                       case NO_DETECTADO:
-                          ponMotores(-10, -10);	delay(10);
-                          ponMotores(-50, -10);	delay(400);
-                          ponMotores(50, 50);	delay(10);
+                          ponMotores(-150, -10); delay(600);
+                          ponMotores(50, 50);
                           break;
                       case DETECTADO_ADELANTE:	// Si detecto adelante, no hago caso a los cny, simplemente empujo.
-                          ponMotores(-150, 0);	delay(10);
-                          ponMotores(100, 100);	delay(10);
+                          ponMotores(-100, 0);  delay(300);
+                          ponMotores(50, 50);
                           break;
                       case DETECTADO_DERECHA:		// Si detecto a la derecha y se activa el cny izquierdo, es que me esta empujando. Intento salir dando marcha atras.
-                          ponMotores(-10, -10);	    delay(10);
-                          ponMotores(-200, -130);   delay(10);
-                          ponMotores(100, 100);	    delay(10);
+                          ponMotores(-100, -10);  delay(300);
+                          ponMotores(50, 50);
                           break;
                       case DETECTADO_IZQUIERDA:	// Si detecto a la izquierda y se activa el cny izquierdo, es casi imposible. No lo contemplo
                           break;
                       case DETECTADO_ATRAS:
-                          ponMotores(-10, -10);	    delay(10);
-                          ponMotores(-50, -50);     delay(400);
-                          ponMotores(50, 50);	    delay(10);
+                          ponMotores(-100, -100);  delay(300);
+                          ponMotores(50, 50);
                           break;
                       default:
                           break;
                   }   // switch(PosicionOponente)
+                  RESTART_PID;
               }   // if(contadorCNY_I >= NUM_LECTURAS_CNY)
               break;
 
 
       default:
-         contadorCNY_Ambos = 0;
-         ponMotores(50, 50);
          break;
   }
 }
 
 
 
+void bluePrint(char *cadena)
+{
+#ifdef DEBUG
+  Serial1.print(cadena); 
+#endif
+}
 
-
-
+void bluePrintln(char *cadena)
+{
+#ifdef DEBUG
+  Serial1.println(cadena); 
+#endif
+}
 
 
 

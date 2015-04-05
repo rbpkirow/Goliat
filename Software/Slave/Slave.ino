@@ -46,11 +46,11 @@ void RequestEvent()
       
     if(analogRead(SA_CNY_Der) > UMBRAL)  CNY_D = 1;  
     else                                 CNY_D = 0;
-    bufer[0] =  (0<<7) + //(digitalRead(SD_DelIzq)<<7) + 
-                (0<<6) + //(digitalRead(SD_DelDer)<<6) + 
+    bufer[0] =  (digitalRead(SD_DelIzq)<<7) + 
+                (digitalRead(SD_DelDer)<<6) + 
                 (0<<5) +   //(digitalRead(SD_Izq)<<5) + 
                 (0<<4) + //(digitalRead(SD_Der)<<4) + 
-                (0<<3) + //(digitalRead(SD_Tras)<<3) + 
+                (digitalRead(SD_Tras)<<3) + 
                 (CNY_I<<2) + 
                 (CNY_D<<1) + 
                 (0<<0);  //(digitalRead(SD_Aux)<<0);
