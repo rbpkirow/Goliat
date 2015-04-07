@@ -27,14 +27,17 @@ void setup()
 
 void loop() 
 {
+  
         m_comprobarCNY = ComprobarCNY();
         UseCnyData();
+        bluePrintln("loop");
         delay(1);
 }
 
 
 void timerIsr(void)
 {
+        bluePrintln("TIMER");
         DetectadoOponente = NO;
         DireccionAnterior = Direccion;
         _contadorPID++;
@@ -42,9 +45,9 @@ void timerIsr(void)
         
 	if(_contadorPID == 30)	// Si han pasado (1500*30 usg) 45 msg, leo todos los sensores
 	{
-          bluePrint("Pido 4 datos");
-          LeerSensores(4);
-          _contadorPID = 0;
+//          bluePrint("Pido 4 datos");
+//          LeerSensores(4);
+//          _contadorPID = 0;
 	}
 	else	// Sino, solo leo los sensores digitales y los CNY
 	{	
@@ -56,6 +59,7 @@ void timerIsr(void)
             bluePrint("    cnyIzq= "); itoa(cnyIzq, &cValor,10); bluePrint(&cValor);
             bluePrint("    sDelDer= ");itoa(sDelDer, &cValor,10); bluePrint(&cValor);
             bluePrint("    sDelIzq= "); itoa(sDelIzq, &cValor,10); bluePrint(&cValor);
+
             _contadorPID = 0;
 	}
 
@@ -165,6 +169,7 @@ void timerIsr(void)
         
         ponMotores(motizq_tmp,motder_tmp);
 
-        digitalWrite( LED2, digitalRead( LED2 ) ^ 1 );
+//        digitalWrite( LED2, digitalRead( LED2 ) ^ 1 );
+        digitalWrite(LED2, HIGH);
 }
 
