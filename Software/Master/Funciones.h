@@ -1,8 +1,6 @@
 #include <Wire.h>
 #include "arduino.h"
 
-#define DEBUG
-
 void bluePrintln(char *cadena);
 void bluePrint(char *cadena);
 

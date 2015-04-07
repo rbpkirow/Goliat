@@ -38,8 +38,6 @@ void loop()
 
 void flash(void)
 {
-  bluePrint("Pido 1 datos");
-  return;
         DetectadoOponente = NO;
         DireccionAnterior = Direccion;
         _contadorPID++;
@@ -47,9 +45,9 @@ void flash(void)
         
 	if(_contadorPID == 30)	// Si han pasado (1500*30 usg) 45 msg, leo todos los sensores
 	{
-//          bluePrint("Pido 4 datos");
-//          LeerSensores(4);
-//          _contadorPID = 0;
+          bluePrint("Pido 4 datos");
+          LeerSensores(4);
+          _contadorPID = 0;
 	}
 	else	// Sino, solo leo los sensores digitales y los CNY
 	{	
