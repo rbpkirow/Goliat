@@ -1,8 +1,12 @@
 #include "defines.h"
 #include "Funciones.h"
-#include <TimerOne.h>
 #include <Wire.h>
 
+void flash2()
+{
+  bluePrint("Pido 1 datos");
+  return;
+}
 
 void setup() 
 {
@@ -13,11 +17,9 @@ void setup()
 
   // Ya estamos preparados para arrancar con el mando  
   delay(500);
-  bluePrintln("Iniciando!!!");
+//  bluePrintln("Iniciando!!!");
 
 
-  Timer1.initialize(1500);
-  Timer1.attachInterrupt( timerIsr );
 }
 
 
@@ -27,17 +29,17 @@ void setup()
 
 void loop() 
 {
-  
-        m_comprobarCNY = ComprobarCNY();
-        UseCnyData();
-        bluePrintln("loop");
-        delay(1);
+ //       m_comprobarCNY = ComprobarCNY();
+  //      UseCnyData();
+ //       bluePrintln("loop");
+ //       delay(1);
 }
 
 
-void timerIsr(void)
+void flash(void)
 {
-        bluePrintln("TIMER");
+  bluePrint("Pido 1 datos");
+  return;
         DetectadoOponente = NO;
         DireccionAnterior = Direccion;
         _contadorPID++;
@@ -51,18 +53,18 @@ void timerIsr(void)
 	}
 	else	// Sino, solo leo los sensores digitales y los CNY
 	{	
-            LeerSensores(1);
-            char cValor;
+//            LeerSensores(1);
+            char cValor[10];
             bluePrint("Pido 1 datos");
             bluePrint(" - Leidos los siguientes datos: ");
-            bluePrint("    cnyDer= "); itoa(cnyDer, &cValor,10); bluePrint(&cValor); 
-            bluePrint("    cnyIzq= "); itoa(cnyIzq, &cValor,10); bluePrint(&cValor);
-            bluePrint("    sDelDer= ");itoa(sDelDer, &cValor,10); bluePrint(&cValor);
-            bluePrint("    sDelIzq= "); itoa(sDelIzq, &cValor,10); bluePrint(&cValor);
+            bluePrint("    cnyDer= "); itoa(cnyDer, cValor,10); bluePrint(cValor); 
+            bluePrint("    cnyIzq= "); itoa(cnyIzq, cValor,10); bluePrint(cValor);
+            bluePrint("    sDelDer= ");itoa(sDelDer, cValor,10); bluePrint(cValor);
+            bluePrint("    sDelIzq= "); itoa(sDelIzq, cValor,10); bluePrint(cValor);
 
             _contadorPID = 0;
 	}
-
+/*
         
         // --------------------------------        
         //       Sensores Delanteros
@@ -170,6 +172,7 @@ void timerIsr(void)
         ponMotores(motizq_tmp,motder_tmp);
 
 //        digitalWrite( LED2, digitalRead( LED2 ) ^ 1 );
+*/
         digitalWrite(LED2, HIGH);
 }
 

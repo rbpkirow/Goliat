@@ -1,5 +1,4 @@
 #include <Wire.h>
-#include <TimerOne.h>
 #include "arduino.h"
 
 #define DEBUG
@@ -7,8 +6,8 @@
 void bluePrintln(char *cadena);
 void bluePrint(char *cadena);
 
-#define STOP_PID    Timer1.stop();
-#define RESTART_PID Timer1.resume();
+#define STOP_PID    1//Timer1.stop();
+#define RESTART_PID 1//Timer1.resume();
 
 void ponMotores(int _MotIzq, int _MotDer)
 {
@@ -113,27 +112,29 @@ void LeerSensores(char _numero)
 {
   int contadorWire = 0;
   
+//  bluePrintln("Pido datos al esclavo");
   // Peticion de datos
   Wire.beginTransmission(2);
-  Wire.write(_numero);
+  Wire.write(1);
   Wire.endTransmission();
-  delayMicroseconds(50);
-  
+//  delayMicroseconds(50);
+
+  bluePrintln("Lectura");  
   // Lectura de datos
-  Wire.requestFrom(2,_numero);
-  while(Wire.available() != _numero && contadorWire<2)
-  {
-    Serial1.println("Esperando datos...");
-    if(Wire.available() == 0)
-    {
-      Serial1.println("Datos no disponibles.. Vuelvo a pedirlos");
-      Wire.requestFrom(2,_numero);
-    }
-    contadorWire++;
-  }
+//  Wire.requestFrom(2,_numero);
+//  while(Wire.available() != _numero && contadorWire<2)
+//  {
+//    Serial1.println("Esperando datos...");
+//    if(Wire.available() == 0)
+//    {
+//      Serial1.println("Datos no disponibles.. Vuelvo a pedirlos");
+//      Wire.requestFrom(2,_numero);
+//    }
+//    contadorWire++;
+//  }
 
   // Leemos el primer dato  
-  varios = Wire.read();
+/*  varios = Wire.read();
   sAux    = (varios & 0b00000001) >> 0;
   cnyDer  = (varios & 0b00000010) >> 1;
   cnyIzq  = (varios & 0b00000100) >> 2;
@@ -142,7 +143,7 @@ void LeerSensores(char _numero)
   sIzq    = (varios & 0b00100000) >> 5;
   sDelDer = (varios & 0b01000000) >> 6;
   sDelIzq = (varios & 0b10000000) >> 7;
-
+*/
   // Si son 4, leemos los otros 3 sensores
   if(_numero == 4)
   {
