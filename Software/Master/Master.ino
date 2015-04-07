@@ -1,43 +1,43 @@
 #include "defines.h"
 #include "Funciones.h"
+#include <TimerOne.h>
 #include <Wire.h>
 
-void flash2()
-{
-  bluePrint("Pido 1 datos");
-  return;
-}
+unsigned int contador_aux;
 
 void setup() 
 {
   InitHw();
+  EnviarDatos = 0;
   bluePrintln("Selecciona la estrategia");
 //  SeleccionarEstrategia();
 
 
   // Ya estamos preparados para arrancar con el mando  
   delay(500);
-//  bluePrintln("Iniciando!!!");
+  bluePrintln("Iniciando!!!");
 
+  contador_aux = 0;
 
+  Timer1.initialize(4000);
+  Timer1.attachInterrupt( timerIsr );
 }
-
-
-
-
 
 
 void loop() 
 {
- //       m_comprobarCNY = ComprobarCNY();
-  //      UseCnyData();
- //       bluePrintln("loop");
- //       delay(1);
+      if(EnviarDatos == 1)
+      {
+        m_comprobarCNY = ComprobarCNY();
+        UseCnyData();
+        EnviarDatos = 0;
+      }
 }
 
 
-void flash(void)
+void timerIsr(void)
 {
+
         DetectadoOponente = NO;
         DireccionAnterior = Direccion;
         _contadorPID++;
@@ -45,31 +45,22 @@ void flash(void)
         
 	if(_contadorPID == 30)	// Si han pasado (1500*30 usg) 45 msg, leo todos los sensores
 	{
-          bluePrint("Pido 4 datos");
           LeerSensores(4);
           _contadorPID = 0;
 	}
 	else	// Sino, solo leo los sensores digitales y los CNY
 	{	
-//            LeerSensores(1);
-            char cValor[10];
-            bluePrint("Pido 1 datos");
-            bluePrint(" - Leidos los siguientes datos: ");
-            bluePrint("    cnyDer= "); itoa(cnyDer, cValor,10); bluePrint(cValor); 
-            bluePrint("    cnyIzq= "); itoa(cnyIzq, cValor,10); bluePrint(cValor);
-            bluePrint("    sDelDer= ");itoa(sDelDer, cValor,10); bluePrint(cValor);
-            bluePrint("    sDelIzq= "); itoa(sDelIzq, cValor,10); bluePrint(cValor);
-
+            LeerSensores(1);
             _contadorPID = 0;
 	}
-/*
+        EnviarDatos = 1;
+
         
         // --------------------------------        
         //       Sensores Delanteros
         // --------------------------------        
         if(sDelIzq == DETECTADO || sDelDer == DETECTADO)
         {
-            bluePrintln("DetectadoOponente = DETECTADO_ADELANTE");
             DetectadoOponente = SI;
             V_BASE+=2;
             if(V_BASE > 150)
@@ -95,7 +86,6 @@ void flash(void)
             motizq_tmp = V_BASE;
             motder_tmp = V_BASE;
             PosicionOponente = NO_DETECTADO;
-            bluePrintln("DetectadoOponente = NO");
         }
         
         
@@ -111,14 +101,11 @@ void flash(void)
             motizq_tmp = V_BASE;
             PosicionOponente = DETECTADO_ATRAS;
             DetectadoOponente = SI;
-
-            bluePrint("DetectadoOponente = DETECTADO_ATRAS");
         }
 
         
         if(DetectadoOponente == NO)
         {
-            bluePrintln("DetectadoOponente = NO_DETECTADO");
             contador_Giros++;
             if(contador_Giros >= MAX_CONT)
             {
@@ -169,8 +156,6 @@ void flash(void)
         
         ponMotores(motizq_tmp,motder_tmp);
 
-//        digitalWrite( LED2, digitalRead( LED2 ) ^ 1 );
-*/
-        digitalWrite(LED2, HIGH);
+        digitalWrite( LED2, digitalRead( LED2 ) ^ 1 );
 }
 

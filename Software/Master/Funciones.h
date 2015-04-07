@@ -1,11 +1,12 @@
+#include <TimerOne.h>
 #include <Wire.h>
 #include "arduino.h"
 
 void bluePrintln(char *cadena);
 void bluePrint(char *cadena);
 
-#define STOP_PID    1//Timer1.stop();
-#define RESTART_PID 1//Timer1.resume();
+#define STOP_PID    Timer1.stop();
+#define RESTART_PID Timer1.resume();
 
 void ponMotores(int _MotIzq, int _MotDer)
 {
@@ -45,7 +46,9 @@ void ponMotores(int _MotIzq, int _MotDer)
 
 void InitHw()
 {
+  #ifdef DEBUG
         Serial1.begin(115200);
+  #endif
 	Wire.begin();  // I2C como Maestro
 	TCCR1B = TCCR1B & 0b000 | 0x02;  // 4KHz PWM-9-10
 	TCCR3B = TCCR3B & 0b000 | 0x02;  // 4KHz PWM-5
@@ -88,18 +91,18 @@ void SeleccionarEstrategia()
     if(BOTON_P1_PULSADO)
     {
       Pulsador = P1_PULSADO;	// Indica arranque del robot      
-      Serial1.println("P1_PULSADO");
+      bluePrintln("P1_PULSADO");
     }
     if(BOTON_P2_PULSADO)
     {
       Pulsador = P2_PULSADO;	// Indica cambio de estrategia inicial
-      Serial1.println("P2_PULSADO");
+      bluePrintln("P2_PULSADO");
       // Enviar por lcd la estrategia utilizada
     }
     if(BOTON_P3_PULSADO)
     {
       Pulsador = P3_PULSADO;
-      Serial1.println("P3_PULSADO");
+      bluePrintln("P3_PULSADO");
     }
   }while(Pulsador != P1_PULSADO);
 }
@@ -110,29 +113,26 @@ void LeerSensores(char _numero)
 {
   int contadorWire = 0;
   
-//  bluePrintln("Pido datos al esclavo");
+  sei();
   // Peticion de datos
   Wire.beginTransmission(2);
-  Wire.write(1);
+  Wire.write(_numero);
   Wire.endTransmission();
-//  delayMicroseconds(50);
 
-  bluePrintln("Lectura");  
   // Lectura de datos
-//  Wire.requestFrom(2,_numero);
-//  while(Wire.available() != _numero && contadorWire<2)
-//  {
-//    Serial1.println("Esperando datos...");
-//    if(Wire.available() == 0)
-//    {
-//      Serial1.println("Datos no disponibles.. Vuelvo a pedirlos");
-//      Wire.requestFrom(2,_numero);
-//    }
-//    contadorWire++;
-//  }
+  Wire.requestFrom(2,_numero);
+  while(Wire.available() != _numero && contadorWire<2)
+  {
+    if(Wire.available() == 0)
+    {
+      Wire.requestFrom(2,_numero);
+    }
+    contadorWire++;
+  }
 
   // Leemos el primer dato  
-/*  varios = Wire.read();
+  varios = Wire.read();
+
   sAux    = (varios & 0b00000001) >> 0;
   cnyDer  = (varios & 0b00000010) >> 1;
   cnyIzq  = (varios & 0b00000100) >> 2;
@@ -141,7 +141,7 @@ void LeerSensores(char _numero)
   sIzq    = (varios & 0b00100000) >> 5;
   sDelDer = (varios & 0b01000000) >> 6;
   sDelIzq = (varios & 0b10000000) >> 7;
-*/
+
   // Si son 4, leemos los otros 3 sensores
   if(_numero == 4)
   {
@@ -184,7 +184,6 @@ void UseCnyData()
   switch(m_comprobarCNY)
   {
       case LEIDO_CNY_BOTH:
-            Serial1.println("Leidos 2 CNY");
             contadorCNY_D = 0;
             contadorCNY_I = 0;
             V_BASE = BIAS;
@@ -194,7 +193,6 @@ void UseCnyData()
             {
               STOP_PID;
               contadorCNY_Ambos = 0;
-              bluePrintln("Confirmado 2 CNY");
             
               ponMotores(-10, -10);    delay(10);
               ponMotores(-50, -50);    delay(400);

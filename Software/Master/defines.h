@@ -99,4 +99,6 @@ char DetectadoOponente;
 unsigned char MAX_CONT;
 unsigned char contador_Giros;
 char Prueba;
+char EnviarDatos;
+char cValor[10];
 
