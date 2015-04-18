@@ -1,12 +1,21 @@
-#include <TimerOne.h>
 #include <Wire.h>
 #include "arduino.h"
 
 void bluePrintln(char *cadena);
 void bluePrint(char *cadena);
+void LeerSensores();
 
-#define STOP_PID    Timer1.stop();
-#define RESTART_PID Timer1.resume();
+
+void checkDeteccion(int tiempo)
+{
+    for(i=0; i<tiempo/5; i++)
+    { 
+        delay(5); 
+        LeerSensores(); 
+        if((sDelIzq * sDelDer * sDel == DETECTADO) &&  sCnyD != BLANCO && sCnyI != BLANCO) 
+           return;
+    }
+}
 
 void ponMotores(int _MotIzq, int _MotDer)
 {
@@ -46,9 +55,6 @@ void ponMotores(int _MotIzq, int _MotDer)
 
 void InitHw()
 {
-  #ifdef DEBUG
-        Serial1.begin(115200);
-  #endif
 	Wire.begin();  // I2C como Maestro
 	TCCR1B = TCCR1B & 0b000 | 0x02;  // 4KHz PWM-9-10
 	TCCR3B = TCCR3B & 0b000 | 0x02;  // 4KHz PWM-5
@@ -61,11 +67,15 @@ void InitHw()
 	pinMode(PWM_D_1,OUTPUT);
 	pinMode(PWM_D_2,OUTPUT);
 	pinMode(BOTON_PIN,INPUT);
-        _contadorPID = 0;
+	pinMode(CNY_D,INPUT);
+	pinMode(CNY_I,INPUT);
+
+      // Variables
         PosicionOponente = NO_DETECTADO;
+        EnviarDatos = 0;
         contador_V_BASE = 0;
-        BIAS = 80;
-        V_BASE = BIAS;
+        V_BASE_INICIAL = 80;
+        V_BASE = V_BASE_INICIAL;
         TIME = 200;
 }
 
@@ -80,8 +90,6 @@ void SeleccionarEstrategia()
   {
     // Lectura de los pulsadores - Leo 2 veces para evitar rebotes y falsas lecturas
     _botonAn_tmp1 = analogRead(BOTON_PIN);      delay(50);    _botonAn_tmp2 = analogRead(BOTON_PIN);
-    Serial1.println(_botonAn_tmp1);
-    
     
     if(abs(_botonAn_tmp1 - _botonAn_tmp2) < 10)  // Si el valor es el mismo, es que el boton esta pulsado
       _botonAn = _botonAn_tmp1;
@@ -109,23 +117,17 @@ void SeleccionarEstrategia()
 
 
 
-void LeerSensores(char _numero)
+void LeerSensores()
 {
   int contadorWire = 0;
   
-  sei();
-  // Peticion de datos
-  Wire.beginTransmission(2);
-  Wire.write(_numero);
-  Wire.endTransmission();
-
   // Lectura de datos
-  Wire.requestFrom(2,_numero);
-  while(Wire.available() != _numero && contadorWire<2)
+  Wire.requestFrom(SLAVE_ADD, 1);  // Pedimos al esclavo 1 byte con el formato correcto
+  while(Wire.available() != 1 && contadorWire<2)
   {
     if(Wire.available() == 0)
     {
-      Wire.requestFrom(2,_numero);
+      Wire.requestFrom(SLAVE_ADD,1);
     }
     contadorWire++;
   }
@@ -133,40 +135,44 @@ void LeerSensores(char _numero)
   // Leemos el primer dato  
   varios = Wire.read();
 
-  sAux    = (varios & 0b00000001) >> 0;
-  cnyDer  = (varios & 0b00000010) >> 1;
-  cnyIzq  = (varios & 0b00000100) >> 2;
-  sTras   = (varios & 0b00001000) >> 3;
-  sDer    = (varios & 0b00010000) >> 4;
-  sIzq    = (varios & 0b00100000) >> 5;
+// Formato de envio:
+//    _________________________________________________________________________________________________
+//    |   bit 7   |   bit 6   |   bit 5   |   bit 4   |   bit 3   |   bit 2   |   bit 1   |   bit 0   |
+//    |___________|___________|___________|___________|___________|___________|___________|___________|
+//    | SD_DelIzq | SD_DelDer |   SD_Del  |   SD_Izq  |   SD_Der  |   SD_Tras |   CNY_I   |   CNY_D   |
+//    |___________|___________|___________|___________|___________|___________|___________|___________|
+
+  //Serial1.print("V= ");
+  //Serial1.println(varios,BIN);
+  sCnyD   = (varios & 0b00000001) >> 0;
+  sCnyI   = (varios & 0b00000010) >> 1;
+  sTras   = (varios & 0b00000100) >> 2;
+  sDer    = (varios & 0b00001000) >> 3;
+  sIzq    = (varios & 0b00010000) >> 4;
+  sDel    = (varios & 0b00100000) >> 5;
   sDelDer = (varios & 0b01000000) >> 6;
   sDelIzq = (varios & 0b10000000) >> 7;
-
-  // Si son 4, leemos los otros 3 sensores
-  if(_numero == 4)
-  {
-    
-  }
 }
+
+
 
 
 char ComprobarCNY(void)
 {
-    char LecturaCNY_D = cnyDer;
-    char LecturaCNY_I = cnyIzq;
-    if(LecturaCNY_D == BLANCO || LecturaCNY_I == BLANCO)
+    
+    if(sCnyD == BLANCO || sCnyI == BLANCO)
     {
-        if(LecturaCNY_D == BLANCO && LecturaCNY_I == BLANCO)
+        if(sCnyD == BLANCO && sCnyI == BLANCO)
 	{
 	  return LEIDO_CNY_BOTH;
 	}
 	else
         {
-	  if(LecturaCNY_D == BLANCO)
+	  if(sCnyD == BLANCO)
 	  {
 	    return LEIDO_CNY_D;
 	  }
-	  else    // LecturaCNY_I == NEGRO
+	  else    // sCnyI == BLANCO
 	  {
 	    return LEIDO_CNY_I;
 	  }
@@ -186,103 +192,99 @@ void UseCnyData()
       case LEIDO_CNY_BOTH:
             contadorCNY_D = 0;
             contadorCNY_I = 0;
-            V_BASE = BIAS;
+            V_BASE = V_BASE_INICIAL;
             contador_V_BASE = 0;            
             contadorCNY_Ambos++;
             if(contadorCNY_Ambos >= NUM_LECTURAS_CNY)
             {
-              STOP_PID;
               contadorCNY_Ambos = 0;
             
-              ponMotores(-10, -10);    delay(10);
-              ponMotores(-50, -50);    delay(400);
-              ponMotores(50, 50);      delay(100);
-              
-              if(PosicionOponente == NO_DETECTADO)
+              switch(PosicionOponente)
               {
-                  ponMotores(50, -50);  delay(700);
-                  ponMotores(50, 50);	delay(100);
-              }
-              RESTART_PID;
+                  case NO_DETECTADO:
+                      ponMotores(-10, -10);   delay(10);
+                      ponMotores(-10, -150);  checkDeteccion(600);
+                      break;
+                  case DETECTADO_ADELANTE:	// Si detecto adelante, no hago caso a los cny, simplemente empujo.
+                      ponMotores(-10, -10);      delay(10);
+                      ponMotores(-100, -100);    delay(50);
+                      break;
+                  case DETECTADO_DERECHA:		// Si detecto a la derecha y se activa el cny derecho, es casi imposible. No lo contemplo
+                  case DETECTADO_IZQUIERDA:	// Si detecto a la izquierda y se activa el cny derecho, es que me esta empujando. Intento salir dando marcha atras.
+                      ponMotores(-10, -10);	  delay(10);
+                      ponMotores(-250, -250);     delay(50);
+                      break;
+                  case DETECTADO_ATRAS:
+                      break;
+                  default:
+                      break;
+              } // switch(PosicionOponente)
             }   // if(contadorCNY_Ambos >= NUM_LECTURAS_CNY)
             break;
 
             case LEIDO_CNY_D:
               contadorCNY_Ambos = 0;
               contadorCNY_I = 0;
-              V_BASE = BIAS;
+              V_BASE = V_BASE_INICIAL;
               contador_V_BASE = 0;
               contadorCNY_D++;
 
               if(contadorCNY_D >= NUM_LECTURAS_CNY)
               {
-                  STOP_PID;
                   contadorCNY_D = 0;
-
                   switch(PosicionOponente)
                   {
                       case NO_DETECTADO:
                           ponMotores(-10, -10);   delay(10);
-                          ponMotores(-10, -150);  delay(600);
-                          ponMotores(50, 50);     delay(5);
+                          ponMotores(-10, -150);  checkDeteccion(600);
                           break;
                       case DETECTADO_ADELANTE:	// Si detecto adelante, no hago caso a los cny, simplemente empujo.
-                          ponMotores(-10, -10);   delay(10);
-                          ponMotores(0, -100);    delay(300);
+                          ponMotores(-10, -10);      delay(10);
+                          ponMotores(-80, -100);     delay(5);
                           break;
                       case DETECTADO_DERECHA:		// Si detecto a la derecha y se activa el cny derecho, es casi imposible. No lo contemplo
                           break;
                       case DETECTADO_IZQUIERDA:	// Si detecto a la izquierda y se activa el cny derecho, es que me esta empujando. Intento salir dando marcha atras.
-                          ponMotores(-10, -10);	    delay(400);
-                          ponMotores(-130, -200);   delay(300);
-                          ponMotores(100, 100);	    delay(400);
+                          ponMotores(-10, -10);	    delay(10);
+                          ponMotores(-130, -200);   delay(20);
                           break;
                       case DETECTADO_ATRAS:
-                          ponMotores(-10, -10);	    delay(400);
-                          ponMotores(-200, -200);   delay(300);
-                          ponMotores(100, 100);	    delay(400);
                           break;
                       default:
                           break;
                   } // switch(PosicionOponente)
-                  RESTART_PID;
               } // if(contadorCNY_D >= NUM_LECTURAS_CNY)
               break;
           case LEIDO_CNY_I:
               contadorCNY_Ambos = 0;
               contadorCNY_D = 0;
-              V_BASE = BIAS;
+              V_BASE = V_BASE_INICIAL;
               contador_V_BASE = 0;
               contadorCNY_I++;
               if(contadorCNY_I >= NUM_LECTURAS_CNY)
               {
-                  STOP_PID;
                   contadorCNY_I = 0;
-
                   switch(PosicionOponente)
                   {
                       case NO_DETECTADO:
-                          ponMotores(-150, -10); delay(600);
-                          ponMotores(50, 50);
+                          ponMotores(-10, -10);   delay(10);
+                          ponMotores(-150, -10);  checkDeteccion(600);
                           break;
                       case DETECTADO_ADELANTE:	// Si detecto adelante, no hago caso a los cny, simplemente empujo.
-                          ponMotores(-100, 0);  delay(300);
-                          ponMotores(50, 50);
+                          ponMotores(-10, -10);      delay(10);
+                          ponMotores(-100, -80);     delay(5);
                           break;
                       case DETECTADO_DERECHA:		// Si detecto a la derecha y se activa el cny izquierdo, es que me esta empujando. Intento salir dando marcha atras.
-                          ponMotores(-100, -10);  delay(300);
-                          ponMotores(50, 50);
+                          ponMotores(-100, -10);  delay(10);
                           break;
                       case DETECTADO_IZQUIERDA:	// Si detecto a la izquierda y se activa el cny izquierdo, es casi imposible. No lo contemplo
                           break;
                       case DETECTADO_ATRAS:
-                          ponMotores(-100, -100);  delay(300);
-                          ponMotores(50, 50);
+                          ponMotores(-100, -100);  delay(10);
                           break;
                       default:
                           break;
                   }   // switch(PosicionOponente)
-                  RESTART_PID;
               }   // if(contadorCNY_I >= NUM_LECTURAS_CNY)
               break;
 
@@ -309,11 +311,97 @@ void bluePrintln(char *cadena)
 }
 
 
+void FijarUmbral(int _valor)
+{
+  Wire.beginTransmission(2);
+  Wire.write(_valor/4);
+  Wire.endTransmission();
+}
 
 
 
 
 
+void UseCnyData2()
+{
+  char aux;
+  switch(m_comprobarCNY)
+  {
+      case LEIDO_CNY_BOTH:
+            contadorCNY_D = 0;
+            contadorCNY_I = 0;
+            V_BASE = V_BASE_INICIAL;
+            contador_V_BASE = 0;            
+            contadorCNY_Ambos++;
+            if(contadorCNY_Ambos >= NUM_LECTURAS_CNY)
+            {
+              contadorCNY_Ambos = 0;
+              ponMotores(-100, -100);
+              if(PosicionOponente == NO_DETECTADO)
+                  checkDeteccion(600);
+              else
+              {
+                do{
+                    LeerSensores();
+                    aux = ComprobarCNY();
+                    
+                }while(aux != LEIDO_CNY_NONE);
+              }
+            
+            }   // if(contadorCNY_Ambos >= NUM_LECTURAS_CNY)
+            break;
 
+            case LEIDO_CNY_D:
+              contadorCNY_Ambos = 0;
+              contadorCNY_I = 0;
+              V_BASE = V_BASE_INICIAL;
+              contador_V_BASE = 0;
+              contadorCNY_D++;
+
+              if(contadorCNY_D >= NUM_LECTURAS_CNY)
+              {
+                  contadorCNY_D = 0;
+                  ponMotores(-10, -150);
+                  if(PosicionOponente == NO_DETECTADO)
+                      checkDeteccion(600);
+                  else
+                  {
+                    do{
+                        LeerSensores();
+                        aux = ComprobarCNY();
+                        
+                    }while(aux != LEIDO_CNY_NONE);
+                  }
+              } // if(contadorCNY_D >= NUM_LECTURAS_CNY)
+              break;
+          case LEIDO_CNY_I:
+              contadorCNY_Ambos = 0;
+              contadorCNY_D = 0;
+              V_BASE = V_BASE_INICIAL;
+              contador_V_BASE = 0;
+              contadorCNY_I++;
+              if(contadorCNY_I >= NUM_LECTURAS_CNY)
+              {
+                  contadorCNY_I = 0;
+                  ponMotores(-150, -10);
+                  if(PosicionOponente == NO_DETECTADO)
+                      checkDeteccion(600);
+                  else
+                  {
+                    do{
+                        LeerSensores();
+                        aux = ComprobarCNY();
+                        
+                    }while(aux != LEIDO_CNY_NONE);
+                  }
+                 
+              }   // if(contadorCNY_I >= NUM_LECTURAS_CNY)
+              break;
+
+
+      default:
+         break;
+  }
+}
 
 

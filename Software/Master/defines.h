@@ -10,6 +10,9 @@
 #define PWM_D_1  9
 #define PWM_D_2 10
 
+#define CNY_D  7
+#define CNY_I  8
+
 #define NO_P_PULSADO 0
 #define P1_PULSADO 1
 #define P2_PULSADO 2
@@ -25,7 +28,7 @@
 
 #define V_MAXIMA  255
 
-#define address   2
+#define SLAVE_ADD   2
 
 #define LEIDO_CNY_NONE  0
 #define LEIDO_CNY_BOTH  1
@@ -38,10 +41,11 @@
 #define DETECTADO_IZQUIERDA 3
 #define DETECTADO_ATRAS     4
 
-#define NUM_LECTURAS_CNY 4
+#define NUM_LECTURAS_CNY 10
+
 
 // Direcciones de movimiento
-#define NOSE				    0 //   |  MI   |  MD   |
+#define NOSE		                0 //   |  MI   |  MD   |
                                   //   |       |       |
 #define IZQ_ATRAS_DER_ATRAS		1 //   |   -1  |   -1  |
 #define IZQ_ATRAS_DER_STOP		2 //   |   -1  |    0  |
@@ -68,19 +72,15 @@ int md;
 unsigned int TIME;
 
 unsigned char varios;
-unsigned char SA_TrasIzq;
-unsigned char SA_TrasDer;
-unsigned char SA_Del;
 
 int _botonAn,_botonAn_tmp1,_botonAn_tmp2;
 int Boton;
-unsigned char _contadorPID;
 char Pulsador;
 char m_comprobarCNY;
 char PosicionOponente;
 
 
-unsigned char sAux,cnyDer,cnyIzq,sTras,sDer,sIzq,sDelDer,sDelIzq;  // todos son digitales
+unsigned char sCnyD, sCnyI, sTras, sDer, sIzq, sDelDer, sDelIzq, sDel;  // todos son digitales
 
 char contadorCNY_I;
 char contadorCNY_D;
@@ -88,9 +88,9 @@ char contadorCNY_Ambos;
 
 int motizq_tmp;
 int motder_tmp;
-char contador_V_BASE;
+unsigned char contador_V_BASE;
 int V_BASE;
-int BIAS;
+int V_BASE_INICIAL;
 
 char Direccion;
 char DireccionAnterior;
@@ -100,5 +100,7 @@ unsigned char MAX_CONT;
 unsigned char contador_Giros;
 char Prueba;
 char EnviarDatos;
-char cValor[10];
+
+unsigned long now;
+
 
