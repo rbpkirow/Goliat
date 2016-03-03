@@ -52,15 +52,15 @@ void setup()
 
   digitalWrite(LED1,HIGH);
   delay(1000);
-  digitalWrite(LED1,LOW);
-  delay(1000);
-  digitalWrite(LED1,HIGH);
-  delay(1000);
-  digitalWrite(LED1,LOW);
-  delay(1000);
-  digitalWrite(LED1,HIGH);
-  delay(950);  
-  digitalWrite(LED1,LOW);
+
+  
+  while(1)
+  {
+    ponMotores(255,255);
+    delay(2000);
+    ponMotores(-255,-255);
+    delay(2000);
+  }
 }
 
 
